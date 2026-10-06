@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>放射線管理学実習 — サーベイメータ応答特性（方向依存性）</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Times+New+Roman&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+/* ==========================================================================
+   Design Tokens & CSS Variables (Academic Light Theme & Dark Theme)
+   ========================================================================== */
+:root {
+  /* Default Academic Report Light Theme */
+  --bg-dark: #f1f5f9;
+  --bg-card: #ffffff;
+  --bg-card-hover: #f8fafc;
+  --bg-input: #f8fafc;
+  --border-color: #cbd5e1;
+  --border-focus: #2563eb;
+  
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  
+  --accent-primary: #1d4ed8;
+  --accent-primary-hover: #1e40af;
+  --accent-secondary: #4f46e5;
+  --accent-success: #16a34a;
+  --accent-danger: #dc2626;
+  --accent-warning: #d97706;
+  
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.04);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  
+  --font-family: 'Times New Roman', "Yu Gothic", "游ゴシック", "Meiryo", "メイリオ", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Dark Theme Overrides */
+body.theme-dark {
+  --bg-dark: #0f172a;
+  --bg-card: #1e293b;
+  --bg-card-hover: #334155;
+  --bg-input: #0f172a;
+  --border-color: #334155;
+  --border-focus: #38bdf8;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --text-muted: #64748b;
+  
+  --accent-primary: #38bdf8;
+  --accent-primary-hover: #0284c7;
+  --accent-secondary: #818cf8;
+  --accent-success: #34d399;
+  --accent-danger: #f87171;
+  --accent-warning: #fbbf24;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+}
+
+/* Base Styles */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--bg-dark);
+  color: var(--text-primary);
+  font-family: var(--font-family);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  padding: 16px;
+  min-height: 100vh;
+}
+
+/* App Container */
+.app-container {
+  max-width: 1400px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Header */
+.app-header {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 16px 24px;
+  box-shadow: var(--shadow-md);
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.logo-area {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.logo-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-md);
+  background: linear-gradient(135deg, #1d4ed8, #4f46e5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(29, 78, 216, 0.3);
+}
+
+.logo-area h1 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.subtitle {
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.theme-selector-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.theme-select {
+  padding: 6px 10px;
+  font-weight: 600;
+}
+
+/* Main Grid */
+.app-main {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 1024px) {
+  .app-main {
+    grid-template-columns: 500px 1fr;
+  }
+}
+
+/* Panels */
+.panel {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  padding: 20px;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 12px;
+}
+
+.panel-header h2 {
+  font-size: 1.1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  border-radius: var(--radius-md);
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #1d4ed8, #1e40af);
+  color: #fff;
+  box-shadow: 0 2px 6px rgba(29, 78, 216, 0.3);
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.btn-secondary {
+  background: var(--bg-input);
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-secondary:hover {
+  background: var(--border-color);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-primary);
+  border-color: var(--border-color);
+}
+
+.btn-outline:hover {
+  background: var(--bg-input);
+  border-color: var(--accent-primary);
+}
+
+.btn-danger-outline {
+  background: transparent;
+  color: var(--accent-danger);
+  border-color: rgba(220, 38, 38, 0.3);
+}
+
+.btn-danger-outline:hover {
+  background: rgba(220, 38, 38, 0.1);
+  border-color: var(--accent-danger);
+}
+
+/* Controls & Settings Grid */
+.settings-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (max-width: 480px) {
+  .settings-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.setting-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.setting-item label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.form-select, .form-input {
+  width: 100%;
+  padding: 8px 10px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-size: 0.875rem;
+  outline: none;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+
+.form-select:focus, .form-input:focus {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Series Tabs */
+.series-tabs-container {
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 6px;
+}
+
+.series-tabs {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.series-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.series-tab:hover {
+  background: var(--border-color);
+}
+
+.series-tab.active {
+  background: rgba(29, 78, 216, 0.1);
+  border-color: var(--accent-primary);
+  color: var(--accent-primary);
+}
+
+.series-color-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.btn-add-tab {
+  padding: 6px 10px;
+  font-size: 0.9rem;
+}
+
+/* Series Meta Card */
+.series-meta-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 10px 12px;
+}
+
+.meta-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.series-name-input {
+  flex: 1;
+  min-width: 140px;
+  font-weight: 600;
+}
+
+.color-picker-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+.form-color {
+  -webkit-appearance: none;
+  border: none;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  background: none;
+}
+
+.form-color::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.form-color::-webkit-color-swatch {
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+}
+
+/* Toggle Switch */
+.toggle-switch {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+}
+
+.toggle-switch input {
+  display: none;
+}
+
+.slider {
+  width: 34px;
+  height: 18px;
+  background-color: var(--border-color);
+  border-radius: 9px;
+  position: relative;
+  transition: 0.2s;
+}
+
+.slider:before {
+  content: "";
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  left: 2px;
+  top: 2px;
+  background-color: white;
+  border-radius: 50%;
+  transition: 0.2s;
+}
+
+input:checked + .slider {
+  background-color: var(--accent-primary);
+}
+
+input:checked + .slider:before {
+  transform: translateX(16px);
+}
+
+.toggle-label {
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+}
+
+/* Data Table */
+.table-wrapper {
+  max-height: 440px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.data-table th {
+  position: sticky;
+  top: 0;
+  background: var(--bg-input);
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 10px 12px;
+  border-bottom: 2px solid var(--border-color);
+  z-index: 2;
+  white-space: nowrap;
+}
+
+.unit-badge {
+  font-size: 0.7rem;
+  font-weight: normal;
+  color: var(--text-muted);
+}
+
+.data-table td {
+  padding: 6px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 0.875rem;
+  white-space: nowrap;
+}
+
+.data-table tr:hover {
+  background: rgba(226, 232, 240, 0.4);
+}
+
+body.theme-dark .data-table tr:hover {
+  background: rgba(51, 65, 85, 0.3);
+}
+
+.table-input {
+  width: 100%;
+  padding: 6px 8px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  color: var(--text-primary);
+  font-family: 'Times New Roman', monospace;
+  font-size: 0.95rem;
+  text-align: right;
+}
+
+.table-input:focus {
+  border-color: var(--border-focus);
+  outline: none;
+}
+
+.table-norm-val {
+  font-family: 'Times New Roman', serif;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--accent-primary);
+  text-align: right;
+  padding-right: 12px;
+}
+
+.table-norm-val.interpolated {
+  color: #d97706;
+  font-style: italic;
+  font-weight: 500;
+}
+
+/* Graph Section & Canvas */
+.panel-graph {
+  display: flex;
+  flex-direction: column;
+}
+
+.chart-container {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  max-width: 680px;
+  margin: 0 auto;
+  background: #ffffff;
+  border: 2px solid #000000;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+#polarCanvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Tooltip */
+.chart-tooltip {
+  position: absolute;
+  padding: 8px 12px;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #000000;
+  border-radius: var(--radius-sm);
+  color: #000000;
+  font-size: 0.85rem;
+  font-family: 'Times New Roman', "Yu Gothic", sans-serif;
+  pointer-events: none;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  z-index: 10;
+  transition: opacity 0.15s ease;
+}
+
+body.theme-dark .chart-tooltip {
+  background: rgba(15, 23, 42, 0.95);
+  border-color: var(--accent-primary);
+  color: #ffffff;
+}
+
+.chart-tooltip.hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.graph-options-bar {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  padding: 8px 12px;
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  flex-wrap: wrap;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent-primary);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Export Card */
+.export-card {
+  background: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.export-header h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
+.export-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.copy-feedback {
+  font-size: 0.8rem;
+  color: var(--accent-success);
+  font-weight: 700;
+  transition: opacity 0.3s;
+}
+
+.copy-feedback.hidden {
+  opacity: 0;
+}
+
+/* Footer */
+.app-footer {
+  text-align: center;
+  padding: 12px;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+</style>
+</head>
+<body class="theme-light">
+  <div class="app-container">
+    <!-- Header -->
+    <header class="app-header">
+      <div class="header-content">
+        <div class="logo-area">
+          <div>
+            <h1>放射線管理学実習 — サーベイメータ応答特性（方向依存性）</h1>
+          </div>
+        </div>
+        <div class="header-actions">
+          <div class="theme-selector-wrapper">
+            <label for="themeSelect">テーマ:</label>
+            <select id="themeSelect" class="form-select theme-select">
+              <option value="light" selected>白背景</option>
+              <option value="dark">ダーク</option>
+            </select>
+          </div>
+          <button id="btnPreset" class="btn btn-outline">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+            サンプルデータ
+          </button>
+          <button id="btnClear" class="btn btn-danger-outline">リセット</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Grid Layout -->
+    <main class="app-main">
+      <!-- Left Column: Controls & Data Table -->
+      <section class="panel panel-inputs">
+        <div class="panel-header">
+          <h2>測定条件・データ入力</h2>
+        </div>
+
+        <!-- Global Settings Controls -->
+        <div class="settings-grid">
+          <div class="setting-item">
+            <label for="stepInterval">角度刻み</label>
+            <select id="stepInterval" class="form-select">
+              <option value="30" selected>30° 刻み (12方向)</option>
+              <option value="15">15° 刻み (24方向)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label for="inputMode">入力データの種類</label>
+            <select id="inputMode" class="form-select">
+              <option value="raw" selected>測定値 (自動正規化)</option>
+              <option value="normalized">正規化感度 (%) 直接入力</option>
+            </select>
+          </div>
+          <div class="setting-item" id="normRefContainer">
+            <label for="normRefAngle">正規化基準角度</label>
+            <select id="normRefAngle" class="form-select">
+              <option value="0" selected>0° (正面 = 100%)</option>
+              <option value="max">最大値 (Max = 100%)</option>
+            </select>
+          </div>
+          <div class="setting-item">
+            <label for="maxScale">グラフ上限スケール (%)</label>
+            <select id="maxScale" class="form-select">
+              <option value="100">100 % (標準)</option>
+              <option value="120" selected>120 % (余白あり)</option>
+              <option value="150">150 % (大スケール)</option>
+              <option value="auto">自動 (Auto)</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Series Selector Tabs -->
+        <div class="series-tabs-container">
+          <div class="series-tabs" id="seriesTabs">
+            <!-- Dynamic Series Tabs rendered here -->
+          </div>
+        </div>
+
+        <!-- Detector Meta Info Card -->
+        <div class="series-meta-card" id="seriesMetaCard">
+          <div class="meta-row">
+            <input type="text" id="seriesNameInput" class="form-input series-name-input" placeholder="検出器名 (例: NaI(Tl))">
+            <div class="color-picker-wrapper">
+              <label for="seriesColorInput" title="描画色">カラー</label>
+              <input type="color" id="seriesColorInput" class="form-color">
+            </div>
+            <label class="toggle-switch">
+              <input type="checkbox" id="seriesVisibleInput" checked>
+              <span class="slider"></span>
+              <span class="toggle-label">表示</span>
+            </label>
+            <button id="btnDeleteSeries" class="btn btn-danger-outline" style="padding: 4px 8px; font-size: 0.75rem;" title="この検出器を削除">削除</button>
+          </div>
+        </div>
+
+        <!-- Data Entry Table -->
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th style="width: 70px;">角度 θ</th>
+                <th id="thInputValue">測定値 <span class="unit-badge">(μSv/h, cpm等)</span></th>
+                <th style="width: 100px;">正規化感度 (%)</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody">
+              <!-- Rows populated by JS -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- Right Column: Polar Graph Canvas & Export -->
+      <section class="panel panel-graph">
+        <div class="panel-header">
+          <h2>極座標グラフ</h2>
+          <div class="graph-quick-tools">
+            <button id="btnDownloadPNG" class="btn btn-primary">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              PNG保存
+            </button>
+          </div>
+        </div>
+
+        <!-- Chart Container -->
+        <div class="chart-container" id="chartContainer">
+          <canvas id="polarCanvas"></canvas>
+          <div id="chartTooltip" class="chart-tooltip hidden"></div>
+        </div>
+
+        <!-- Display Customization Options -->
+        <div class="graph-options-bar">
+          <label class="checkbox-label">
+            <input type="checkbox" id="chkFill" checked>
+            <span>塗りつぶし</span>
+          </label>
+          <label class="checkbox-label">
+            <input type="checkbox" id="chkPoints" checked>
+            <span>データ点</span>
+          </label>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <p>放射線管理学実習 — サーベイメータ応答特性（方向依存性）</p>
+    </footer>
+  </div>
+
+  <script>
+/* ==========================================================================
+   Surveymeter Polar Graph Application
+   ========================================================================== */
+
+(function () {
+  'use strict';
+
+  // --- Publication-Quality Academic Preset Colors ---
+  const PRESET_SERIES_30 = [
+    {
+      id: 'series-1',
+      name: 'NaI(Tl)シンチレーション',
+      color: '#1d4ed8', // Academic Navy Blue
+      visible: true,
+      values: { 0: 100, 30: 98, 60: 95, 90: 95, 120: 93, 150: 80, 180: 20, 210: 81, 240: 92, 270: 95, 300: 96, 330: 98 }
+    },
+    {
+      id: 'series-2',
+      name: 'GMサーベイメータ',
+      color: '#059669', // Academic Emerald Green
+      visible: true,
+      values: { 0: 100, 30: 96, 60: 90, 90: 88, 120: 84, 150: 78, 180: 65, 210: 79, 240: 85, 270: 88, 300: 92, 330: 97 }
+    },
+    {
+      id: 'series-3',
+      name: '電離箱サーベイメータ',
+      color: '#dc2626', // Academic Crimson Red
+      visible: true,
+      values: { 0: 100, 30: 99, 60: 98, 90: 98, 120: 97, 150: 96, 180: 95, 210: 96, 240: 97, 270: 98, 300: 99, 330: 99 }
+    }
+  ];
+
+  const PRESET_SERIES_15 = [
+    {
+      id: 'series-1',
+      name: 'NaI(Tl)シンチレーション',
+      color: '#1d4ed8',
+      visible: true,
+      values: {
+        0: 100, 15: 99, 30: 98, 45: 96, 60: 95, 75: 95, 90: 95, 105: 94, 120: 93, 135: 88, 150: 80, 165: 50,
+        180: 20, 195: 52, 210: 81, 225: 88, 240: 92, 255: 94, 270: 95, 285: 95, 300: 96, 315: 97, 330: 98, 345: 99
+      }
+    },
+    {
+      id: 'series-2',
+      name: 'GMサーベイメータ',
+      color: '#059669',
+      visible: true,
+      values: {
+        0: 100, 15: 98, 30: 96, 45: 92, 60: 90, 75: 89, 90: 88, 105: 86, 120: 84, 135: 81, 150: 78, 165: 72,
+        180: 65, 195: 71, 210: 79, 225: 82, 240: 85, 255: 87, 270: 88, 285: 90, 300: 92, 315: 95, 330: 97, 345: 99
+      }
+    },
+    {
+      id: 'series-3',
+      name: '電離箱サーベイメータ',
+      color: '#dc2626',
+      visible: true,
+      values: {
+        0: 100, 15: 99.5, 30: 99, 45: 98.5, 60: 98, 75: 98, 90: 98, 105: 97.5, 120: 97, 135: 96.5, 150: 96, 165: 95.5,
+        180: 95, 195: 95.5, 210: 96, 225: 96.5, 240: 97, 255: 97.5, 270: 98, 285: 98, 300: 99, 315: 99, 330: 99, 345: 99.5
+      }
+    }
+  ];
+
+  // --- App State ---
+  let state = {
+    theme: 'light',
+    stepInterval: 30,
+    inputMode: 'raw',
+    normRefAngle: '0',
+    maxScale: '120',
+    activeSeriesIndex: 0,
+    fillPolygon: true,
+    showPoints: true,
+    seriesList: JSON.parse(JSON.stringify(PRESET_SERIES_30))
+  };
+
+  // --- DOM Elements ---
+  const elThemeSelect = document.getElementById('themeSelect');
+  const elStepInterval = document.getElementById('stepInterval');
+  const elInputMode = document.getElementById('inputMode');
+  const elNormRefContainer = document.getElementById('normRefContainer');
+  const elNormRefAngle = document.getElementById('normRefAngle');
+  const elMaxScale = document.getElementById('maxScale');
+  const elSeriesTabs = document.getElementById('seriesTabs');
+  const elSeriesNameInput = document.getElementById('seriesNameInput');
+  const elSeriesColorInput = document.getElementById('seriesColorInput');
+  const elSeriesVisibleInput = document.getElementById('seriesVisibleInput');
+  const elBtnDeleteSeries = document.getElementById('btnDeleteSeries');
+  const elDataTableBody = document.getElementById('dataTableBody');
+  const elThInputValue = document.getElementById('thInputValue');
+  const canvas = document.getElementById('polarCanvas');
+  const ctx = canvas.getContext('2d');
+  const elTooltip = document.getElementById('chartTooltip');
+  const elChkFill = document.getElementById('chkFill');
+  const elChkPoints = document.getElementById('chkPoints');
+  const elBtnDownloadPNG = document.getElementById('btnDownloadPNG');
+  const elBtnPreset = document.getElementById('btnPreset');
+  const elBtnClear = document.getElementById('btnClear');
+
+  let hitTestPoints = [];
+
+  // --- Helpers ---
+  function getAngles(step) {
+    const angles = [];
+    for (let a = 0; a < 360; a += step) {
+      angles.push(a);
+    }
+    return angles;
+  }
+
+  // --- Linear Interpolation Helpers ---
+
+  // Collect all angles that have actual measured values (not empty)
+  function getFilledAngles(series) {
+    return Object.keys(series.values)
+      .map(Number)
+      .filter(a => {
+        const v = series.values[a];
+        return v !== undefined && v !== null && v !== '' && !isNaN(Number(v)) && Number(v) !== 0;
+      })
+      .sort((a, b) => a - b);
+  }
+
+  // Circular linear interpolation: given a target angle, find the two nearest
+  // measured angles and linearly interpolate between them (wrapping at 360°).
+  function interpolateValue(series, targetAngle) {
+    const filled = getFilledAngles(series);
+    if (filled.length === 0) return 0;
+    if (filled.length === 1) return Number(series.values[filled[0]]);
+
+    // Check if exact value exists
+    if (series.values[targetAngle] !== undefined && series.values[targetAngle] !== '' &&
+        !isNaN(Number(series.values[targetAngle])) && Number(series.values[targetAngle]) !== 0) {
+      return Number(series.values[targetAngle]);
+    }
+
+    // Find surrounding angles (circular)
+    let prevAngle = null, nextAngle = null;
+    // Search forward for next measured angle
+    for (let i = 0; i < filled.length; i++) {
+      if (filled[i] > targetAngle) { nextAngle = filled[i]; break; }
+    }
+    // Search backward for previous measured angle
+    for (let i = filled.length - 1; i >= 0; i--) {
+      if (filled[i] < targetAngle) { prevAngle = filled[i]; break; }
+    }
+    // Wrap around
+    if (prevAngle === null) prevAngle = filled[filled.length - 1];
+    if (nextAngle === null) nextAngle = filled[0];
+
+    const v1 = Number(series.values[prevAngle]);
+    const v2 = Number(series.values[nextAngle]);
+
+    // Angular span (circular, always forward from prev to next)
+    let span = nextAngle - prevAngle;
+    if (span <= 0) span += 360;
+    let dist = targetAngle - prevAngle;
+    if (dist <= 0) dist += 360;
+
+    const t = (span === 0) ? 0 : dist / span;
+    return v1 + t * (v2 - v1);
+  }
+
+  function getNormalizedValues(series) {
+    const angles = getAngles(state.stepInterval);
+    const result = {};
+
+    if (state.inputMode === 'normalized') {
+      angles.forEach(a => {
+        const v = series.values[a];
+        if (v !== undefined && v !== null && v !== '' && !isNaN(Number(v))) {
+          result[a] = { value: Number(v), interpolated: false };
+        } else {
+          // Try interpolation
+          const interp = interpolateValue(series, a);
+          result[a] = { value: interp, interpolated: true };
+        }
+      });
+      return result;
+    }
+
+    // First pass: get raw values (with interpolation for missing)
+    const rawValues = {};
+    angles.forEach(a => {
+      const v = series.values[a];
+      if (v !== undefined && v !== null && v !== '' && !isNaN(Number(v)) && Number(v) !== 0) {
+        rawValues[a] = { value: Number(v), interpolated: false };
+      } else {
+        const interp = interpolateValue(series, a);
+        rawValues[a] = { value: interp, interpolated: true };
+      }
+    });
+
+    // Determine reference for normalization
+    let refVal = 1;
+    if (state.normRefAngle === '0') {
+      refVal = rawValues[0] ? rawValues[0].value : 1;
+      if (!refVal || refVal === 0) refVal = 1;
+    } else if (state.normRefAngle === 'max') {
+      let maxV = 0;
+      angles.forEach(a => { if (rawValues[a] && rawValues[a].value > maxV) maxV = rawValues[a].value; });
+      refVal = maxV > 0 ? maxV : 1;
+    }
+
+    angles.forEach(a => {
+      result[a] = {
+        value: (rawValues[a].value / refVal) * 100,
+        interpolated: rawValues[a].interpolated
+      };
+    });
+
+    return result;
+  }
+
+  // --- Polygon Area Calculation ---
+  // Computes area of a closed polygon using the shoelace formula.
+  function polygonArea(pts) {
+    let area = 0;
+    const n = pts.length;
+    for (let i = 0; i < n; i++) {
+      const j = (i + 1) % n;
+      area += pts[i].x * pts[j].y;
+      area -= pts[j].x * pts[i].y;
+    }
+    return Math.abs(area) / 2;
+  }
+
+  // --- Storage ---
+  function saveToLocalStorage() {
+    try {
+      localStorage.setItem('polar_chart_app_state_v4', JSON.stringify(state));
+    } catch (e) {
+      console.warn('LocalStorage save failed:', e);
+    }
+  }
+
+  function loadFromLocalStorage() {
+    try {
+      const saved = localStorage.getItem('polar_chart_app_state_v4');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && parsed.seriesList && parsed.seriesList.length > 0) {
+          state = Object.assign({}, state, parsed);
+          elThemeSelect.value = state.theme || 'light';
+          elStepInterval.value = state.stepInterval;
+          elInputMode.value = state.inputMode;
+          elNormRefAngle.value = state.normRefAngle || '0';
+          elMaxScale.value = state.maxScale || '120';
+          elChkFill.checked = state.fillPolygon;
+          elChkPoints.checked = state.showPoints;
+        }
+      }
+    } catch (e) {
+      console.warn('LocalStorage load failed:', e);
+    }
+  }
+
+  function applyTheme() {
+    if (state.theme === 'dark') {
+      document.body.classList.remove('theme-light');
+      document.body.classList.add('theme-dark');
+    } else {
+      document.body.classList.remove('theme-dark');
+      document.body.classList.add('theme-light');
+    }
+  }
+
+  // --- UI Renderers ---
+  function renderSeriesTabs() {
+    elSeriesTabs.innerHTML = '';
+    state.seriesList.forEach((s, idx) => {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = `series-tab ${idx === state.activeSeriesIndex ? 'active' : ''}`;
+      btn.innerHTML = `
+        <span class="series-color-dot" style="background-color: ${s.color};"></span>
+        <span>${escapeHtml(s.name)}</span>
+      `;
+      btn.addEventListener('click', () => {
+        state.activeSeriesIndex = idx;
+        renderSeriesTabs();
+        renderSeriesMetaCard();
+        renderTable();
+        drawChart();
+      });
+      elSeriesTabs.appendChild(btn);
+    });
+
+    if (state.seriesList.length < 5) {
+      const addBtn = document.createElement('button');
+      addBtn.type = 'button';
+      addBtn.className = 'series-tab btn-add-tab';
+      addBtn.innerHTML = '+ 追加';
+      addBtn.title = '新しい検出器を追加';
+      addBtn.addEventListener('click', () => {
+        const colors = ['#7c3aed', '#d97706', '#0284c7', '#ea580c'];
+        const newId = `series-${Date.now()}`;
+        const newSeries = {
+          id: newId,
+          name: `検出器 ${state.seriesList.length + 1}`,
+          color: colors[state.seriesList.length % colors.length],
+          visible: true,
+          values: {}
+        };
+        getAngles(state.stepInterval).forEach(a => newSeries.values[a] = 100);
+        state.seriesList.push(newSeries);
+        state.activeSeriesIndex = state.seriesList.length - 1;
+        saveToLocalStorage();
+        renderSeriesTabs();
+        renderSeriesMetaCard();
+        renderTable();
+        drawChart();
+      });
+      elSeriesTabs.appendChild(addBtn);
+    }
+  }
+
+  function renderSeriesMetaCard() {
+    const s = state.seriesList[state.activeSeriesIndex];
+    if (!s) return;
+    elSeriesNameInput.value = s.name;
+    elSeriesColorInput.value = s.color;
+    elSeriesVisibleInput.checked = s.visible;
+  }
+
+  function renderTable() {
+    const s = state.seriesList[state.activeSeriesIndex];
+    if (!s) return;
+
+    if (state.inputMode === 'raw') {
+      elThInputValue.innerHTML = '測定値 <span class="unit-badge">(μSv/h, cpm等)</span>';
+      elNormRefContainer.style.display = 'flex';
+    } else {
+      elThInputValue.innerHTML = '正規化感度 S(θ) (%)';
+      elNormRefContainer.style.display = 'none';
+    }
+
+    const angles = getAngles(state.stepInterval);
+    const normVals = getNormalizedValues(s);
+    elDataTableBody.innerHTML = '';
+
+    angles.forEach(angle => {
+      const tr = document.createElement('tr');
+      const val = s.values[angle] !== undefined ? s.values[angle] : '';
+      const entry = normVals[angle];
+      const normPct = entry ? entry.value.toFixed(1) : '0.0';
+      const isInterp = entry && entry.interpolated;
+
+      let angleLabel = `${angle}°`;
+      if (angle === 0) angleLabel += ' (正面)';
+      else if (angle === 90) angleLabel += ' (右)';
+      else if (angle === 180) angleLabel += ' (背面)';
+      else if (angle === 270) angleLabel += ' (左)';
+
+      tr.innerHTML = `
+        <td style="font-weight: 600;">${angleLabel}</td>
+        <td>
+          <input type="number" step="any" class="table-input" data-angle="${angle}" value="${val}" placeholder="—(補間)">
+        </td>
+        <td class="table-norm-val ${isInterp ? 'interpolated' : ''}" title="${isInterp ? '線形補間値' : '測定値'}">${normPct}%${isInterp ? ' *' : ''}</td>
+      `;
+      elDataTableBody.appendChild(tr);
+    });
+
+    const inputs = elDataTableBody.querySelectorAll('.table-input');
+    inputs.forEach(inp => {
+      inp.addEventListener('input', (e) => {
+        const a = e.target.getAttribute('data-angle');
+        const num = e.target.value === '' ? '' : Number(e.target.value);
+        s.values[a] = num;
+
+        const updatedNorms = getNormalizedValues(s);
+        const trs = elDataTableBody.querySelectorAll('tr');
+        angles.forEach((ang, idx) => {
+          if (trs[idx]) {
+            const cell = trs[idx].querySelector('.table-norm-val');
+            const updEntry = updatedNorms[ang];
+            if (cell && updEntry) {
+              const isI = updEntry.interpolated;
+              cell.textContent = updEntry.value.toFixed(1) + '%' + (isI ? ' *' : '');
+              cell.className = 'table-norm-val' + (isI ? ' interpolated' : '');
+              cell.title = isI ? '線形補間値' : '測定値';
+            }
+          }
+        });
+
+        saveToLocalStorage();
+        drawChart();
+      });
+    });
+  }
+
+  function escapeHtml(str) {
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+
+  // --- Publication-Quality Polar Chart Canvas Renderer ---
+  function drawChart() {
+    const rect = canvas.getBoundingClientRect();
+    const dpr = window.devicePixelRatio || 1;
+    const width = rect.width || 600;
+    const height = rect.height || 600;
+
+    canvas.width = width * dpr;
+    canvas.height = height * dpr;
+    ctx.resetTransform();
+    ctx.scale(dpr, dpr);
+
+    const isLight = (state.theme !== 'dark');
+
+    const colors = {
+      bg: isLight ? '#ffffff' : '#0f172a',
+      outerBorder: isLight ? '#000000' : '#334155',
+      gridMajor: isLight ? '#000000' : '#64748b',
+      gridMinor: isLight ? '#9ca3af' : '#334155',
+      textMajor: isLight ? '#000000' : '#38bdf8',
+      textMinor: isLight ? '#1f2937' : '#94a3b8',
+      ringText: isLight ? '#374151' : '#cbd5e1',
+      fontAcademic: 'bold 13px "Times New Roman", "Yu Gothic", "游ゴシック", "Meiryo", sans-serif',
+      fontRing: '11px "Times New Roman", sans-serif'
+    };
+
+    ctx.fillStyle = colors.bg;
+    ctx.fillRect(0, 0, width, height);
+
+    const cx = width / 2;
+    const cy = height / 2;
+    const padding = 55;
+    const R = Math.min(cx, cy) - padding;
+
+    let maxScaleVal = 120;
+    if (state.maxScale === '100') maxScaleVal = 100;
+    else if (state.maxScale === '120') maxScaleVal = 120;
+    else if (state.maxScale === '150') maxScaleVal = 150;
+    else if (state.maxScale === 'auto') {
+      let maxObserved = 100;
+      state.seriesList.forEach(s => {
+        if (!s.visible) return;
+        const nv = getNormalizedValues(s);
+        Object.values(nv).forEach(entry => {
+          if (entry.value > maxObserved) maxObserved = entry.value;
+        });
+      });
+      maxScaleVal = Math.ceil((maxObserved + 10) / 20) * 20;
+    }
+
+    const circleSteps = [];
+    for (let p = 20; p <= maxScaleVal; p += 20) {
+      circleSteps.push(p);
+    }
+
+    circleSteps.forEach(pct => {
+      const r = R * (pct / maxScaleVal);
+      ctx.beginPath();
+      ctx.arc(cx, cy, r, 0, 2 * Math.PI);
+      ctx.strokeStyle = (pct === 100) ? colors.gridMajor : colors.gridMinor;
+      ctx.lineWidth = (pct === 100) ? 1.8 : 1;
+      ctx.setLineDash((pct === 100) ? [] : [3, 3]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = colors.ringText;
+      ctx.font = colors.fontRing;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`${pct}%`, cx, cy - r - 2);
+    });
+
+    const mainAngles = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+    const angles15 = [15, 45, 75, 105, 135, 165, 195, 225, 255, 285, 315, 345];
+
+    // Radial guide lines for selected angles
+    const stepAngles = (state.stepInterval === 15) ? [...mainAngles, ...angles15].sort((a,b)=>a-b) : mainAngles;
+
+    stepAngles.forEach(deg => {
+      const rad = ((deg - 90) * Math.PI) / 180;
+      const x = cx + R * Math.cos(rad);
+      const y = cy + R * Math.sin(rad);
+
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(x, y);
+      ctx.strokeStyle = (deg % 90 === 0) ? colors.gridMajor : colors.gridMinor;
+      ctx.lineWidth = (deg % 90 === 0) ? 1.8 : 1;
+      ctx.stroke();
+    });
+
+    // Outer Angle Text Labels
+    stepAngles.forEach(deg => {
+      const rad = ((deg - 90) * Math.PI) / 180;
+      const labelR = R + 22;
+      const lx = cx + labelR * Math.cos(rad);
+      const ly = cy + labelR * Math.sin(rad);
+
+      ctx.font = (deg % 90 === 0) ? colors.fontAcademic : '11px "Times New Roman", "Yu Gothic", sans-serif';
+      ctx.fillStyle = (deg % 90 === 0) ? colors.textMajor : colors.textMinor;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+
+      let text = `${deg}°`;
+      if (deg === 0) text += ' (正面)';
+      else if (deg === 90) text += ' (右)';
+      else if (deg === 180) text += ' (背面)';
+      else if (deg === 270) text += ' (左)';
+
+      ctx.fillText(text, lx, ly);
+    });
+
+    ctx.beginPath();
+    ctx.arc(cx, cy, 3, 0, 2 * Math.PI);
+    ctx.fillStyle = colors.gridMajor;
+    ctx.fill();
+
+    hitTestPoints = [];
+    const angles = getAngles(state.stepInterval);
+
+    // Reference area: 100% circle = π * R_100^2 where R_100 = R * (100 / maxScaleVal)
+    const R100 = R * (100 / maxScaleVal);
+    const refCircleArea = Math.PI * R100 * R100;
+
+    state.seriesList.forEach(s => {
+      if (!s.visible) return;
+
+      const normVals = getNormalizedValues(s);
+      const pts = [];
+
+      angles.forEach(deg => {
+        const entry = normVals[deg];
+        const nv = entry ? entry.value : 0;
+        const isInterp = entry ? entry.interpolated : false;
+        const rad = ((deg - 90) * Math.PI) / 180;
+        const r = R * (nv / maxScaleVal);
+        const px = cx + r * Math.cos(rad);
+        const py = cy + r * Math.sin(rad);
+
+        pts.push({ x: px, y: py, deg, normVal: nv, rawVal: s.values[deg], interpolated: isInterp });
+        hitTestPoints.push({
+          x: px,
+          y: py,
+          deg,
+          normVal: nv,
+          rawVal: s.values[deg],
+          interpolated: isInterp,
+          seriesName: s.name,
+          color: s.color
+        });
+      });
+
+      if (pts.length < 2) return;
+
+      ctx.beginPath();
+      ctx.moveTo(pts[0].x, pts[0].y);
+      for (let i = 1; i < pts.length; i++) {
+        ctx.lineTo(pts[i].x, pts[i].y);
+      }
+      ctx.closePath();
+
+      let areaRatio = null;
+      if (state.fillPolygon) {
+        ctx.fillStyle = hexToRgba(s.color, isLight ? 0.12 : 0.18);
+        ctx.fill();
+        // Compute area ratio relative to 100% circle
+        const polyA = polygonArea(pts);
+        areaRatio = polyA / refCircleArea;
+      }
+
+      ctx.strokeStyle = s.color;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+
+      if (state.showPoints) {
+        pts.forEach(p => {
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4.5, 0, 2 * Math.PI);
+          ctx.fillStyle = s.color;
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = colors.bg;
+          ctx.stroke();
+          // Draw open circle ring for interpolated points
+          if (p.interpolated) {
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 7, 0, 2 * Math.PI);
+            ctx.strokeStyle = s.color;
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+        });
+      }
+
+      s._areaRatio = areaRatio;
+    });
+
+    // Legend & area ratio labels (top-left)
+    let legendY = 24;
+    state.seriesList.forEach(s => {
+      if (!s.visible) return;
+      ctx.beginPath();
+      ctx.arc(24, legendY, 5, 0, 2 * Math.PI);
+      ctx.fillStyle = s.color;
+      ctx.fill();
+
+      ctx.font = 'bold 12px "Times New Roman", "Yu Gothic", "メイリオ", sans-serif';
+      ctx.fillStyle = colors.textMajor;
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      let labelText = s.name;
+      if (state.fillPolygon && s._areaRatio !== null && s._areaRatio !== undefined) {
+        labelText += `  [面積比 = ${s._areaRatio.toFixed(3)}]`;
+      }
+      ctx.fillText(labelText, 36, legendY);
+      legendY += 20;
+    });
+
+    // Interpolation footnote at bottom of canvas
+    const hasInterp = state.seriesList.some(s => s.visible &&
+      getAngles(state.stepInterval).some(a => {
+        const v = s.values[a];
+        return v === undefined || v === null || v === '' || isNaN(Number(v)) || Number(v) === 0;
+      })
+    );
+    if (hasInterp) {
+      ctx.font = '10px "Times New Roman", sans-serif';
+      ctx.fillStyle = isLight ? '#6b7280' : '#94a3b8';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText('* 線形補間値', 12, height - 6);
+    }
+  }
+
+  function hexToRgba(hex, alpha) {
+    let c = hex.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const num = parseInt(c, 16);
+    return `rgba(${(num >> 16) & 255}, ${(num >> 8) & 255}, ${num & 255}, ${alpha})`;
+  }
+
+  // --- Tooltip Handler ---
+  canvas.addEventListener('mousemove', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const mx = e.clientX - rect.left;
+    const my = e.clientY - rect.top;
+
+    let closest = null;
+    let minDist = 14;
+
+    hitTestPoints.forEach(pt => {
+      const dist = Math.hypot(pt.x - mx, pt.y - my);
+      if (dist < minDist) {
+        minDist = dist;
+        closest = pt;
+      }
+    });
+
+    if (closest) {
+      elTooltip.classList.remove('hidden');
+      elTooltip.style.left = `${closest.x + 12}px`;
+      elTooltip.style.top = `${closest.y - 12}px`;
+
+      const rawText = (closest.rawVal !== undefined && closest.rawVal !== '' && closest.rawVal !== 0) ? `${closest.rawVal}` : '—';
+      const interpTag = closest.interpolated ? ' <span style="color:#f59e0b;font-size:0.85em;">(補間値)</span>' : '';
+      elTooltip.innerHTML = `
+        <strong style="color: ${closest.color};">${escapeHtml(closest.seriesName)}</strong><br>
+        角度 θ: <strong>${closest.deg}°</strong><br>
+        測定値: <strong>${rawText}</strong><br>
+        正規化感度 S(θ): <span style="color: ${closest.color}; font-weight: bold;">${closest.normVal.toFixed(1)}%</span>${interpTag}
+      `;
+    } else {
+      elTooltip.classList.add('hidden');
+    }
+  });
+
+  canvas.addEventListener('mouseleave', () => {
+    elTooltip.classList.add('hidden');
+  });
+
+  // --- Export Action ---
+  function downloadPNG() {
+    drawChart();
+    const link = document.createElement('a');
+    link.download = `サーベイメータ_方向依存性_極座標グラフ_${state.stepInterval}deg.png`;
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }
+
+  // --- Event Listeners Setup ---
+  function initEvents() {
+    elThemeSelect.addEventListener('change', (e) => {
+      state.theme = e.target.value;
+      applyTheme();
+      saveToLocalStorage();
+      drawChart();
+    });
+
+    elStepInterval.addEventListener('change', (e) => {
+      state.stepInterval = Number(e.target.value);
+      const angles = getAngles(state.stepInterval);
+      state.seriesList.forEach(s => {
+        angles.forEach(a => {
+          if (s.values[a] === undefined) s.values[a] = 100;
+        });
+      });
+      saveToLocalStorage();
+      renderTable();
+      drawChart();
+    });
+
+    elInputMode.addEventListener('change', (e) => {
+      state.inputMode = e.target.value;
+      saveToLocalStorage();
+      renderTable();
+      drawChart();
+    });
+
+    elNormRefAngle.addEventListener('change', (e) => {
+      state.normRefAngle = e.target.value;
+      saveToLocalStorage();
+      renderTable();
+      drawChart();
+    });
+
+    elMaxScale.addEventListener('change', (e) => {
+      state.maxScale = e.target.value;
+      saveToLocalStorage();
+      drawChart();
+    });
+
+    elSeriesNameInput.addEventListener('input', (e) => {
+      state.seriesList[state.activeSeriesIndex].name = e.target.value;
+      saveToLocalStorage();
+      renderSeriesTabs();
+      drawChart();
+    });
+
+    elSeriesColorInput.addEventListener('input', (e) => {
+      state.seriesList[state.activeSeriesIndex].color = e.target.value;
+      saveToLocalStorage();
+      renderSeriesTabs();
+      drawChart();
+    });
+
+    elSeriesVisibleInput.addEventListener('change', (e) => {
+      state.seriesList[state.activeSeriesIndex].visible = e.target.checked;
+      saveToLocalStorage();
+      renderSeriesTabs();
+      drawChart();
+    });
+
+    elBtnDeleteSeries.addEventListener('click', () => {
+      if (state.seriesList.length <= 1) {
+        alert('少なくとも1つの検出器が必要です。');
+        return;
+      }
+      const sName = state.seriesList[state.activeSeriesIndex].name;
+      if (confirm(`「${sName}」を削除しますか？`)) {
+        state.seriesList.splice(state.activeSeriesIndex, 1);
+        state.activeSeriesIndex = Math.max(0, state.activeSeriesIndex - 1);
+        saveToLocalStorage();
+        renderSeriesTabs();
+        renderSeriesMetaCard();
+        renderTable();
+        drawChart();
+      }
+    });
+
+    elChkFill.addEventListener('change', (e) => {
+      state.fillPolygon = e.target.checked;
+      saveToLocalStorage();
+      drawChart();
+    });
+
+    elChkPoints.addEventListener('change', (e) => {
+      state.showPoints = e.target.checked;
+      saveToLocalStorage();
+      drawChart();
+    });
+
+    elBtnDownloadPNG.addEventListener('click', downloadPNG);
+
+    elBtnPreset.addEventListener('click', () => {
+      if (state.stepInterval === 30) {
+        state.seriesList = JSON.parse(JSON.stringify(PRESET_SERIES_30));
+      } else {
+        state.seriesList = JSON.parse(JSON.stringify(PRESET_SERIES_15));
+      }
+      state.activeSeriesIndex = 0;
+      saveToLocalStorage();
+      renderSeriesTabs();
+      renderSeriesMetaCard();
+      renderTable();
+      drawChart();
+    });
+
+    elBtnClear.addEventListener('click', () => {
+      if (confirm('すべての測定データをリセットしますか？')) {
+        const angles = getAngles(state.stepInterval);
+        state.seriesList.forEach(s => {
+          angles.forEach(a => s.values[a] = '');
+        });
+        saveToLocalStorage();
+        renderTable();
+        drawChart();
+      }
+    });
+
+    window.addEventListener('resize', drawChart);
+  }
+
+  // --- Initializer ---
+  function init() {
+    loadFromLocalStorage();
+    applyTheme();
+    initEvents();
+    renderSeriesTabs();
+    renderSeriesMetaCard();
+    renderTable();
+    drawChart();
+  }
+
+  init();
+
+})();
+
+</script>
+</body>
+</html>
